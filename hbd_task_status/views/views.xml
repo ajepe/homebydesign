@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="project_tasks_report_wiz" model="ir.ui.view">
+            <field name="name">Tasks Report</field>
+            <field name="model">project.task.report</field>
+            <field name="arch" type="xml">
+                <form>
+                    <footer>
+                        <button name="action_generate_report" string="Generate Report" type="object" class="btn btn-success" />
+                    </footer>
+                </form>
+            </field>
+        </record>
+        <record id="project_tasks_report_tree" model="ir.ui.view">
+            <field name="name">tasks.report.tree</field>
+            <field name="model">project.task.report</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="owner_id" />
+                    <field name="project_id" />
+                    <field name="open_tasks" />
+                    <field name="delay_tasks" />
+                    <field name="finish_month" />
+                    <field name="finish_week" />
+                </tree>
+            </field>
+        </record>
+        <record id="project_tasks_report_act" model="ir.actions.act_window">
+            <field name="name">Tasks Report</field>
+            <field name="res_model">project.task.report</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        <record id="project_tasks_report_search" model="ir.ui.view">
+            <field name="name">project.task.report.search</field>
+            <field name="model">project.task.report</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="owner_id" />
+                    <field name="project_id" />
+                    <group expand="1" string="Group By">
+                        <filter string="Owner" icon="terp-accessories-archiver" context="{'group_by':'owner_id'}" name='group_by_owner_id' />
+                        <filter string="Project" icon="terp-accessories-archiver" context="{'group_by':'project_id'}" name='group_by_project_id' />
+                    </group>
+                </search>
+            </field>
+        </record>
+        <menuitem name="Tasks Report" id="project_tasks_report_menu" parent="project.menu_project_management" action="project_tasks_report_act" sequence="15" />
+    </data>
+</openerp>
