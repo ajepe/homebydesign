@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
+
+import json
 import logging
 import werkzeug
+import werkzeug.wrappers
+from itertools import groupby
+
 
 from openerp import SUPERUSER_ID
 from openerp import http
-from openerp import tools
 from openerp.http import request
-from openerp.tools.translate import _
-from openerp.addons.website.models.website import slug
-from openerp.addons.web.controllers.main import login_redirect
 
 
 class TasksReport(http.Controller):
@@ -16,8 +17,50 @@ class TasksReport(http.Controller):
 
     def _get_tasks_report_data(self):
         tasks = []
-        records = request.env["project.task"].search([])
-        return tasks
+        report = request.env["project.task.report"].sudo(SUPERUSER_ID)
+        ids = report._action_generate_report()
+
+        data = [
+            {
+                "state": rec.state,
+                "project": rec.project_id.name,
+                "project_id": rec.project_id.id,
+                "open_tasks": rec.open_tasks,
+                "finish_month": rec.finish_month,
+                "delay_tasks": rec.delay_tasks,
+                "finish_week": rec.finish_week,
+                "owner_id": rec.owner_id.id,
+                "owner_name": rec.owner_id.name,
+                "image": rec.image,
+            }
+            for rec in report.browse(ids)
+        ]
+        data = sorted(data, key=lambda rec: rec.get("owner_name"))
+        group_data = groupby(data, key=lambda rec: rec.get("owner_name"))
+        for key, values in group_data:
+            tasks.append({key: list(values)})
+        return werkzeug.wrappers.Response(
+            status=200,
+            content_type="application/json; charset=utf-8",
+            response=json.dumps(tasks),
+        )
+
+    @http.route(
+        ["/api-tasks-status"],
+        type="http",
+        auth="public",
+        website=True,
+    )
+    def api_tasks_status(self, **post):
+        cr, uid, context, pool = (
+            request.cr,
+            request.uid,
+            request.context,
+            request.registry,
+        )
+
+        values = self._get_tasks_report_data()
+        return values
 
     @http.route(
         ["/tasks"],
@@ -33,7 +76,4 @@ class TasksReport(http.Controller):
             request.registry,
         )
 
-        values = self._get_tasks_report_data()
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", values)
-        values = {}
-        return request.website.render("hbd_task_status.tasks", values)
+        return request.render("hbd_task_status.tasks", {})

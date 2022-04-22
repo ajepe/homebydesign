@@ -17,8 +17,10 @@
             <field name="model">project.task.report</field>
             <field name="arch" type="xml">
                 <tree>
+                    <field name="image" widget="image" class="oe_avatar"/>
                     <field name="owner_id" />
                     <field name="project_id" />
+                    <field name="state" />
                     <field name="open_tasks" />
                     <field name="delay_tasks" />
                     <field name="finish_month" />

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from openerp import models, fields, api, _
 
@@ -8,10 +9,22 @@ class ProjectTaskReport(models.TransientModel):
 
     owner_id = fields.Many2one(comodel_name="res.users", string="Owner")
     project_id = fields.Many2one("project.project", string="Project")
+    state = fields.Selection(
+        selection=[
+            ("template", "Template"),
+            ("draft", "Draft"),
+            ("open", "In Progress"),
+            ("pending", "Pending"),
+            ("cancelled", "Cancceled"),
+            ("closed", "Closed"),
+        ],
+        string="State",
+    )
     open_tasks = fields.Integer(string="Open Tasks")
     delay_tasks = fields.Integer(string="Delay Tasks")
     finish_month = fields.Integer(string="Finish Month")
     finish_week = fields.Integer(string="Finish Week")
+    image = fields.Binary(string="Image")
 
     @api.multi
     def action_generate_report(self):
@@ -32,15 +45,12 @@ class ProjectTaskReport(models.TransientModel):
 
     @api.multi
     def _action_generate_report(self):
-        day = 1
         ids = []
+        domain = [("user_id", "!=", "")]
 
-        domain = [
-            ("user_id", "!=", ""),
-        ]
         self.env["project.task.report"].search([]).unlink()
         project_ids = self.env["project.project"].search(domain)
-        this_month = datetime.today().replace(day=day)
+        this_month = datetime.today().replace(day=1)
         this_week = (datetime.today() - timedelta(days=7)).date()
 
         for project_id in project_ids:
@@ -58,16 +68,16 @@ class ProjectTaskReport(models.TransientModel):
                 lambda r: r.stage_id.closed and fields.Datetime.from_string(r.date_end) >= this_week
             )
 
-            ids.append(
-                self.create(
-                    {
-                        "owner_id": project_id.user_id.id,
-                        "project_id": project_id.id,
-                        "open_tasks": len(open_tasks),
-                        "delay_tasks": len(delay_tasks),
-                        "finish_month": len(finish_month),
-                        "finish_week": len(this_week),
-                    }
-                ).id
-            )
+            payload = {
+                "state": project_id.state,
+                "project_id": project_id.id,
+                "open_tasks": len(open_tasks),
+                "finish_week": len(this_week),
+                "delay_tasks": len(delay_tasks),
+                "finish_month": len(finish_month),
+                "owner_id": project_id.user_id.id,
+                "image": project_id.user_id.image,
+            }
+            rec_id = self.create(payload).id
+            ids.append(rec_id)
         return ids
